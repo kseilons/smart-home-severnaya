@@ -1,0 +1,62 @@
+{
+ "name": "Котел",
+ "room": "Котельня",
+ "type": "devices.types.thermostat",
+ "mqtt": {
+  "temperature": {
+   "set": "/devices/yandex/controls/termostat1/temperature",
+   "listen": "/devices/yandex/controls/termostat1/temperature/out"
+  },
+  "pressure": {
+   "set": "/devices/yandex/controls/termostat1/pressure",
+   "listen": "/devices/yandex/controls/termostat1/pressure/out"
+  },
+  "on": {
+   "set": "/devices/yandex/controls/termostat1/on",
+   "listen": "/devices/yandex/controls/termostat1/on/out"
+  }
+ },
+  "capabilities": [
+   {
+    "type": "devices.capabilities.mode",
+    "retrievable": true,
+    "parameters": {
+     "instance": "heat",
+     "modes": [
+      {
+       "value": "min"
+      },
+      {
+       "value": "normal"
+      },
+      {
+       "value": "max"
+      },
+      {
+       "value": "auto"
+      }
+     ]
+    },
+    "status": {
+     "instance": "heat",
+     "value": "auto"
+    }
+   },
+  {
+   "type": "devices.capabilities.on_off",
+   "retrievable": true,
+   "state": {
+    "instance": "on",
+    "value": false
+   }
+  },
+  {
+   "type": "devices.capabilities.range",
+   "retrievable": true,
+   "state": {
+    "instance": "temperature",
+    "value": 0
+   }
+  }
+  ]
+}
