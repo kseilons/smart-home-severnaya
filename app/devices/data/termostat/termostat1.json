@@ -7,22 +7,22 @@
    "set": "/devices/yandex/controls/termostat1/temperature",
    "listen": "/devices/yandex/controls/termostat1/temperature/out"
   },
-  "pressure": {
-   "set": "/devices/yandex/controls/termostat1/pressure",
-   "listen": "/devices/yandex/controls/termostat1/pressure/out"
+  "thermostat": {
+   "set": "/devices/yandex/controls/termostat1/thermostat",
+   "listen": "/devices/yandex/controls/termostat1/thermostat/out"
   },
   "on": {
    "set": "/devices/yandex/controls/termostat1/on",
    "listen": "/devices/yandex/controls/termostat1/on/out"
   }
  },
-  "capabilities": [
+ "capabilities": [
    {
     "type": "devices.capabilities.mode",
     "retrievable": true,
     "parameters": {
-     "instance": "heat",
-     "modes": [
+     "instance": "thermostat",
+     "modes":  [
       {
        "value": "min"
       },
@@ -35,10 +35,11 @@
       {
        "value": "auto"
       }
-     ]
+     ],
+     "ordered": false
     },
-    "status": {
-     "instance": "heat",
+    "state": {
+     "instance": "thermostat",
      "value": "auto"
     }
    },
@@ -53,6 +54,15 @@
   {
    "type": "devices.capabilities.range",
    "retrievable": true,
+   "parameters": {
+    "instance": "temperature",
+    "unit": "unit.temperature.celsius",
+    "range": {
+     "min": 0,
+     "max": 100,
+     "precision": 0.1
+    }
+   },
    "state": {
     "instance": "temperature",
     "value": 0

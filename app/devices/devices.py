@@ -8,6 +8,7 @@ import requests as requests
 
 from utils.listFiles import listFiles
 from utils.stringConvert import str_to_bool
+import config
 
 
 class Devices:
@@ -25,9 +26,9 @@ class Devices:
         self.client.on_connect = self.__on_connect
 
         self.client.on_message = self.__mqtt_message
-        self.client.username_pw_set("kseilons", "8713177")
+        self.client.username_pw_set(config.Mqtt.username, config.Mqtt.password)
 
-        self.client.connect("localhost", 1883, 60)
+        self.client.connect(config.Mqtt.host, config.Mqtt.port, 60)
 
         self.client.loop_start()
 
@@ -37,7 +38,10 @@ class Devices:
                 client.subscribe(mqttSetting["listen"])
                 matching_capabilities = []
                 for capability in device['capabilities']:
-                    if capability['state']['instance'] == instance:
+                    state_instance = capability.get('state', {}).get('instance')
+                    parameters_instance = capability.get('parameters', {}).get('instance')
+
+                    if state_instance == instance or parameters_instance == instance:
                         matching_capabilities.append(capability)
 
                 self.devices_mqtt_info.setdefault(mqttSetting["listen"], []).append({
@@ -48,15 +52,15 @@ class Devices:
         print(f"Connected with result code {rc}")
 
     def __mqtt_message(self, client, userdata, msg):
-        url = 'https://dialogs.yandex.net/api/v1/skills/a577880f-a282-444d-ab3e-cfb97b808227/callback/state'
+        url = f'https://dialogs.yandex.net/api/v1/skills/{config.YandexClient.IDDIALOG}/callback/state'
         headers = {
-            'Authorization': 'OAuth y0_AgAAAAASP8LaAAT7owAAAADoOVQCVsIXj6fbRBCMh1Kv7rk0osCt6jI',
+            'Authorization': f'OAuth {config.YandexClient.TOKEN_USER}',
             'Content-Type': 'application/json',
         }
         data = {
             "ts": time.time(),
             "payload": {
-                "user_id": "demo_user",
+                "user_id": "admin",
                 "devices": []
             }
         }
@@ -69,6 +73,8 @@ class Devices:
                     message = str_to_bool(message)
                 elif (capabilites['state']['instance'] == "brightness"):
                     message = int(message)
+                elif (capabilites['state']['instance'] == "temperature"):
+                    message = int(message)
                 capabilites['state']['value'] = message
             data['payload']['devices'].append(device)
         print(data)
@@ -76,7 +82,6 @@ class Devices:
         print(response.text, response.status_code)
 
     def getDevices(self):
-        print(self.devices)
         return self.devices
 
     def sendMQTTQuery(self, device, instance, new_value):
@@ -139,6 +144,7 @@ class Devices:
                 return device
         return None
 
+#Получает устройства из файлов
     def __get_device(self):
 
         directory = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data")
@@ -152,6 +158,7 @@ class Devices:
                     device = json.load(file)
                     device_id = os.path.splitext(os.path.basename(file_path))[0]  # Extract id from filename
                     device['id'] = device_id  # Add id to device
+                    print(device)
                     self.devices.append(device)
 
     def __del__(self):
@@ -159,4 +166,3 @@ class Devices:
         self.client.loop_stop()
 
 
-devicesService = Devices()

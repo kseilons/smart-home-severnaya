@@ -1,87 +1,120 @@
 # alice-smart-home
-Простейший фреймвок для управления умным домом с помощью Алисы от Яндекса.
-
-## Требования
-* Веб-сервер (достаточно какого-нибудь одноплатного компьютера, например Raspberry Pi)
-* Доменное имя
-* SSL сертификат для работы HTTPS (можно использовать бесплатный от Let's Entrypt)
-* Этот проект основан на Flask, поэтому нужен Python 3.x.x и установленный Flask
 
 ## Установка
+### Библиотеки
+
+### Настройка навыка
 * Склонируйте репозиторий к себе на сервер
-* Отредактируйте __alice.wsgi__ и введите корректный путь к проекту
-* Разверните проект на веб-сервере с помощью WSGI, не забудьте разрешить заголовки с авторизацией
 * Идём на https://dialogs.yandex.ru/ и нажимаем "Создать навык" -> "Создать диалог" -> "Умный дом"
 * Заполняем название (не принципиально)
 * Заполняем Endpoint URL: https://_ваш-домен_/
 * Не показывать в каталоге -> ставим галочку
 * Официальный навык -> нет
-* Заполняем остальные поля и загружаем иконку - всё это абсолютно неважно для приватного навыка
-* Нажимаем "Авторизация" -> "оздать"
+* Заполняем остальные поля и загружаем иконку
+#### Связка аккаунтов
 * Придумываем, запоминаем и вписываем идентификатор приложения и секрет
 * URL авторизации: https://_ваш-домен_/auth/
 * URL для получения токена: https://_ваш-домен_/token/
-* "Сохранить"->"Cохранить"->"На модерацию" - модерация должна пройти мгновенно в случае приватного навыка
-* "Опубликовать"
-* Отредактируйте __config.py__ и введите __CLIENT_ID__ и __CLIENT_SECRET__, которые вы указали, также укажите __USERS_DIRECTORY__, __TOKENS_DIRECTORY__, and __DEVICES_DIRECTORY__ - пути к директориям __users__, __tokens__ and __devices__
-* Рекомендуется сделать __chmod go-rwx tokens users__
+* "Опубликовать" на странице "Настройки"
+### config.py 
+  * Отредактируйте __config.py__ и введите __IDAPP__ и __SECRET__, 
+  которые вы указали, также укажите __IDDIALOG__(В навыке вкладка "общие сведения",
+__TOKEN_USER__(https://yandex.ru/dev/dialogs/smart-home/doc/reference-alerts/resources-alerts.html
+внизу страницы есть ссылка на получение, так же  Http настройки, там где будет запущен python сервис,
+Mqtt, то что мы будем слушать, и куда слать сообщения
 
-## Как использовать
-* Создайте файл _имя-пользователя_.json в директории __users__ и напишите JSON, в котором должны быть пароль пользователя и доступные ему устройства, например:
+
+* Создайте файл _имя-устройства_.json в директории __devices/data__ (имя устроства должно быть уникальным)
+можно для удобства внутри папки data создавать подпапки, но это не обязательно, считывания json файлов
+идет рекурсивно. Внутри файла напишите JSON с описанием устройства в соответствии с документацией Яндекса: https://yandex.ru/dev/dialogs/alice/doc/smart-home/concepts/device-types-docpage/.
+####Важно:
+    * В capabilities указаны свойства, которые меняются с помощью яндекса, в них есть параметры 
+state/instance содержимое которых должно совпадать с названием в mqtt/"то что указано в instance".
+"set", то куда мы будем слать результат с яндекса, а listen, откуда будем принимать изменения свойств с устройств.
+
+  Например:
 ```json
 {
-    "password": "test",
-    "devices": [
-        "pc"
+    "name": "Свет",
+    "room": "Комната",
+    "type": "devices.types.light",
+    "mqtt": {
+        "on": {
+            "set": "/devices/yandex/controls/light2/on",
+            "listen": "/devices/yandex/controls/light2/on/out"
+        },
+        "rgb": {
+            "set": "/devices/yandex/controls/light2/rgb",
+            "listen": "/devices/yandex/controls/light2/rgb/out"
+        },
+        "brightness": {
+            "set": "/devices/yandex/controls/light2/brightness",
+            "listen": "/devices/yandex/controls/light2/brightness/out"
+        },
+        "temperature_k" : {
+             "set": "/devices/yandex/controls/light2/temperature_k",
+            "listen": "/devices/yandex/controls/light2/temperature_k/out"
+        }
+    },
+    "capabilities": [
+        {
+            "type": "devices.capabilities.on_off",
+            "retrievable": true,
+            "state": {
+                "instance": "on",
+                "value": true
+            }
+        },
+        {
+            "type": "devices.capabilities.range",
+            "retrievable": true,
+            "parameters": {
+                "instance": "brightness",
+                "unit": "unit.percent",
+                "range": {
+                    "min": 0,
+                    "max": 100,
+                    "precision": 1
+                }
+            },
+            "state": {
+                "instance": "brightness",
+                "value": 10
+            }
+        },
+        {
+            "type": "devices.capabilities.color_setting",
+            "retrievable": true,
+            "parameters": {
+                "color_model": "rgb",
+                "temperature_k": {
+                    "min": 2000,
+                    "max": 8500,
+                    "precision": 500
+                }
+            },
+            "state": {
+                "instance": "rgb",
+                "value": 0
+            }
+        }
     ]
 }
 ```
 
-* Создайте файл _имя-устройства_.json в директории __devices__ и напишите JSON с описанием устройства в соответствии с документацией Яндекса: https://yandex.ru/dev/dialogs/alice/doc/smart-home/concepts/device-types-docpage/
 
-Например:
-```json
-{
-    "name": "Компьютер",
-    "description": "Основной компьютер",
-    "room": "Моя комната",
-    "type": "devices.types.switch",
-    "capabilities": [
-        {
-            "type": "devices.capabilities.on_off",
-            "retrievable": true
-        }
-    ],
-    "device_info": {
-        "manufacturer": "Cluster",
-        "model": "0",
-        "hw_version": "1.0",
-        "sw_version": "1.0"
-    }
-}
-```
-* Создайте файл _имя-устройства_.py в директории __devices__ и напишите Python скрипт с двумя методами: *query(capability_type, instance) и *command(capability_type, instance, value, relative)
-
-Пример скрипта для включения/выключения компьютера:
-```python
-import subprocess
-
-def pc_query(capability_type, instance):
-    if capability_type == "devices.capabilities.on_off":
-        p = subprocess.run(["ping", "-c", "1", "192.168.0.2"], stdout=subprocess.PIPE)
-        state = p.returncode == 0
-        # Возвращаем состояние и опционально instance 
-        return state, "on"
-
-def pc_action(capability_type, instance, value, relative):
-    if capability_type == "devices.capabilities.on_off":
-        if value:
-            subprocess.run(["wakeonlan", "-i", "192.168.0.255", "00:11:22:33:44:55"])
-        else:
-            subprocess.run(["sh", "-c", "echo shutdown -h | ssh clust@192.168.0.2"])
-        return "DONE"
-```
-Первая функция должна возвращать текущее состояние устройства и опционально __instance__ (если он не указан ни в запросе, ни в описании устройства), а вторая используется для управления им. В параметрах __capability_type__ и __instance__ передаётся, чем мы управляем, а в параметрах __value__ и __relative__ само значение. Подробности опять же смотрите в документации Яндекса.
 
 * Откройте вкладку "Тестирование" в панели управления Яндекс диалогами и попробуйте связать аккаунты, используя ваши имя пользователя и пароль
 * Проверяйте, должно работать как в панели для тестирования, так и на всех устройствах привязанных к вашему аккаунту
+
+## Информация
+* Запускать alice.py
+я создал 40 лампочек для тестирования, у одной половины ссылки на mqtt брокера одинаковые, и у другой, поэтому не пугайтесь если по одному запросу половина лампочек включается или выключается)
+так же есть термостат с меняющейся температурой, и режимом работы для примера.
+* ##### user для авторизации в сервисе
+  *  **username: admin** 
+  * **password: admin**
+# Класс Devices
+* Метод отвечающий за обработку сообщения с mqtt __mqtt_message
+* Метод отвечающий за отправку сообщений actionMethod
+* я 
