@@ -7,7 +7,7 @@ import paho.mqtt.client as mqtt
 import requests as requests
 
 from utils.listFiles import listFiles
-from utils.stringConvert import str_to_bool, str_to_int
+from utils.stringConvert import str_to_bool
 import config
 
 
