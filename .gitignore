@@ -1,3 +1,5 @@
 .idea
 __pycache__
-app/tokens
+app/devices/data
+config.py
+**/data/
