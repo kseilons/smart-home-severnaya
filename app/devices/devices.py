@@ -7,7 +7,7 @@ import paho.mqtt.client as mqtt
 import requests as requests
 
 from utils.listFiles import listFiles
-from utils.stringConvert import str_to_bool
+from utils.stringConvert import str_to_bool, str_to_int
 import config
 
 
@@ -85,6 +85,10 @@ class Devices:
         return self.devices
 
     def sendMQTTQuery(self, device, instance, new_value):
+        print(new_value)
+        if instance == 'on':
+             new_value = int(new_value)
+
         self.client.publish(device["mqtt"][instance]['set'], new_value)
 
     def actionMethod(self, update_device, logger):
@@ -97,7 +101,7 @@ class Devices:
                 # Если типы способностей совпадают
                 if update_capability['type'] == device_capability['type']:
                     new_value = update_capability['state']['value']
-
+                    print(new_value)
                     # Тогда обновляем значение
                     device_capability['state']['value'] = new_value
                     self.sendMQTTQuery(device, instance, new_value)
