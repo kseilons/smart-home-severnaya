@@ -14,9 +14,9 @@ def getDevices():
     app.logger.debug(f"devices request #{request_id}")
     result = {'request_id': request_id, 'payload': {'user_id': user_id, 'devices': devices}}
     json_string = json.dumps(result, indent=4, ensure_ascii=False)
-    print(json_string)
     app.logger.debug(f"devices response #{request_id}: \r\n{json_string}")
     return jsonify(result)
+
 
 def query():
     user_id = Token.get_id()
@@ -32,8 +32,8 @@ def query():
         try:
             device_info = devicesService.getDeviceInfo(device["id"])
             result['payload']['devices'].append(device_info)
-        except:
-            app.logger.warning("Пустое устройство, не хватает каких-либо полей, либо оно было удалено")
+        except Exception as err:
+            app.logger.warning("Не удалось получить информацию об устройстве", err)
     app.logger.debug(f"query response #{request_id}: \r\n{json.dumps(result, indent=4)}")
     return jsonify(result)
 

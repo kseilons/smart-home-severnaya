@@ -94,3 +94,11 @@ def action():
     except Exception as ex:
         app.logger.error(traceback.format_exc())
         return f"Error {type(ex).__name__}: {str(ex)}", 500
+
+
+@app.route('/hls/<path:filename>')
+def hls(filename):
+    response = send_from_directory('hls', filename)
+    response.headers['Content-Type'] = 'application/vnd.apple.mpegurl'
+    response.headers['Access-Control-Allow-Origin'] = 'https://yastatic.net'
+    return response
