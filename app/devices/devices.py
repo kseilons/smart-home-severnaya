@@ -6,7 +6,7 @@ import time
 import paho.mqtt.client as mqtt
 import requests as requests
 
-from utils.listFiles import listFiles
+from utils.files import listFiles
 from utils.stringConvert import str_to_bool
 import config
 
@@ -34,7 +34,7 @@ class Devices:
 
     def __on_connect(self, client, userdata, flags, rc):
         for device in self.devices:
-            for instance, mqttSetting in device['mqtt'].items():
+            for instance, mqttSetting in device.get("mqtt", {}).items():
                 client.subscribe(mqttSetting["listen"])
                 matching_capabilities = []
                 for capability in device['capabilities']:
@@ -94,27 +94,33 @@ class Devices:
     def actionMethod(self, update_device, logger):
         result = {'id': update_device['id'], 'capabilities': []}
         device = self.__get_device_by_id(update_device['id'])
+
+        state = {}
         for update_capability in update_device['capabilities']:
             type = update_capability['type']
             instance = update_capability['state']['instance']
+
             for device_capability in device['capabilities']:
                 # Если типы способностей совпадают
                 if update_capability['type'] == device_capability['type']:
-                    new_value = update_capability['state']['value']
-                    print(new_value)
-                    # Тогда обновляем значение
-                    device_capability['state']['value'] = new_value
-                    self.sendMQTTQuery(device, instance, new_value)
+                    state = update_capability['state']
+                    if update_capability['type'] == "devices.capabilities.video_stream":
+                        state['value']['protocol'] = device_capability['state']['value']['protocol']
+                        state['value']['stream_url'] = device_capability['state']['value']['stream_url']
+                    else:
+                        new_value = update_capability['state']['value']
+                        # Тогда обновляем значение
+                        self.sendMQTTQuery(device, instance, new_value)
+                    device_capability['state'] = state
+
 
             try:
+                state["action_result"] = {
+                    "status": 'DONE'
+                }
                 result['capabilities'].append({
                     'type': type,
-                    'state': {
-                        "instance": instance,
-                        "action_result": {
-                            "status": 'DONE'
-                        }
-                    }
+                    'state': state
                 })
 
             except Exception as ex:
